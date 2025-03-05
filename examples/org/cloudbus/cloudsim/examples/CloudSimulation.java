@@ -90,8 +90,8 @@ public class CloudSimulation {
                   // Parameters for Bat Algorithm
                   int maxIterations = 5; // Maximum number of iterations
                   int populationSize = 30; // Population size (number of bats)
-                  double alpha = 0.9; // Parameter for updating loudness
-                  double gamma = 0.9; // Parameter for updating pulse rate
+                  double alpha = 0.5; // Parameter for updating loudness
+                  double gamma = 0.5; // Parameter for updating pulse rate
   
                   // Initialize Bat Algorithm
                   BatAlgorithm batAlgorithm = new BatAlgorithm(maxIterations, populationSize, alpha, gamma,

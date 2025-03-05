@@ -82,33 +82,33 @@ public class BatAlgorithm {
     public void generateNewSolutions(PopulationBA population, int iteration, int dataCenterIterator) {
         Random random = new Random();
         int dcIndex = dataCenterIterator - 1;
-
+    
         // Ensure globalBestPositions is initialized before accessing
         if (globalBestPositions[dcIndex] == null) {
             globalBestPositions[dcIndex] = new int[population.getBats().get(0).getChromosomeLength()];
         }
 
+        // Ensure new position is within bounds
+        int minPosition = (dataCenterIterator - 1) * 9;
+        int maxPosition = ((dataCenterIterator) * 9) - 1;
+    
         for (Bat bat : population.getBats()) {
             // Update frequency, velocity, and position
             for (int i = 0; i < bat.getChromosomeLength(); i++) {
                 double newFrequency = frequency[bat.getId()];
                 double newVelocity = bat.getVelocity()[i] + (bat.getGene(i) - globalBestPositions[dcIndex][i]) * newFrequency;
                 int newPosition = bat.getGene(i) + (int) Math.round(newVelocity);
-
-                // Ensure new position is within bounds
-                int minPosition = (dataCenterIterator - 1) * 9;
-                int maxPosition = ((dataCenterIterator) * 9) - 1;
-
+    
                 if (newPosition < minPosition) {
                     newPosition = minPosition;
                 } else if (newPosition > maxPosition) {
                     newPosition = maxPosition;
                 }
-
+    
                 bat.setVelocity(i, newVelocity);
                 bat.setGene(i, newPosition);
             }
-
+    
             // Step 7: Local search around the best solution
             if (random.nextDouble() > pulseRate[bat.getId()]) {
                 int[] localSolution = globalBestPositions[dcIndex].clone();
@@ -116,28 +116,38 @@ public class BatAlgorithm {
                     localSolution[i] += random.nextGaussian() * 0.1; // Small random perturbation
                 }
                 bat.setChromosome(localSolution);
+            } else {
+                // Generate a new solution randomly
+                for (int i = 0; i < bat.getChromosomeLength(); i++) {
+                    bat.setGene(i, random.nextInt(maxPosition - minPosition + 1) + minPosition);
+                }
             }
         }
     }
+    
 
     // Step 12: Accept new solutions
     public void acceptNewSolutions(PopulationBA population, int dataCenterIterator) {
         Random random = new Random();
         int dcIndex = dataCenterIterator - 1;
-
+    
         for (Bat bat : population.getBats()) {
             double fitness = calcFitness(bat, dataCenterIterator, 0); // Calculate fitness for the bat
-
+    
             if (random.nextDouble() < loudness[bat.getId()] && fitness > globalBestFitnesses[dcIndex]) {
                 globalBestFitnesses[dcIndex] = fitness;
                 globalBestPositions[dcIndex] = bat.getChromosome().clone();
-
+    
                 // Update loudness and pulse rate
-                loudness[bat.getId()] *= alpha;
-                pulseRate[bat.getId()] *= gamma;
+                loudness[bat.getId()] *= alpha; // Reduce loudness
+                pulseRate[bat.getId()] += 0.1; // Increase pulse rate (ensure it doesn't exceed 1)
+                if (pulseRate[bat.getId()] > 1) {
+                    pulseRate[bat.getId()] = 1;
+                }
             }
         }
     }
+    
 
     // Step 16: Sort bats and find the current best solution
     public void sortBatsAndFindBest(PopulationBA population, int dataCenterIterator) {
