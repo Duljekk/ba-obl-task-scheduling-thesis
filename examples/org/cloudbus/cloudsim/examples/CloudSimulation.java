@@ -73,7 +73,8 @@ public class CloudSimulation {
           DatacenterBroker broker = createBroker();
           int brokerId = broker.getId();
           int vmNumber = 54;
-          int cloudletNumber = 7395;
+          int cloudletNumber = bot*1000;
+//          int cloudletNumber = 7395;
   
           vmlist = createVM(brokerId, vmNumber);
           cloudletList = createCloudlet(brokerId, cloudletNumber);
@@ -203,9 +204,9 @@ public class CloudSimulation {
   private static ArrayList<Double> getSeedValue(int cloudletcount) {
     ArrayList<Double> seed = new ArrayList<Double>();
     try {
-//         File fobj = new File(System.getProperty("user.dir") + "/cloudsim-3.0.3/datasets/randomSimple/RandSimple"+bot+"000.txt");
-//         File fobj = new File(System.getProperty("user.dir") + "/cloudsim-3.0.3/datasets/randomStratified/RandStratified"+bot+"000.txt");
-      File fobj = new File(System.getProperty("user.dir") + "/cloudsim-3.0.3/datasets/SDSC/SDSC7395.txt");
+        File fobj = new File(System.getProperty("user.dir") + "/cloudsim-3.0.3/datasets/randomSimple/randomSimple_"+bot+"000.txt");
+      //  File fobj = new File(System.getProperty("user.dir") + "/cloudsim-3.0.3/datasets/randomStratified/RandStratified"+bot+"000.txt");
+//       File fobj = new File(System.getProperty("user.dir") + "/cloudsim-3.0.3/datasets/SDSC/SDSC7395.txt");
       java.util.Scanner readFile = new java.util.Scanner(fobj);
 
       while (readFile.hasNextLine() && cloudletcount > 0) {

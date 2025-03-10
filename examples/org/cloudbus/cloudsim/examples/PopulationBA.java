@@ -36,6 +36,14 @@ public class PopulationBA {
         }
     }
 
+    public Bat getBat(int index) {
+        return bats.get(index);
+    }
+
+    public void setBat(int index, Bat bat) {
+        bats.set(index, bat);
+    }
+
     // Get the list of bats in the population
     public List<Bat> getBats() {
         return bats;
@@ -74,5 +82,9 @@ public class PopulationBA {
     // Set the data center iterator
     public void setDataCenterIterator(int dataCenterIterator) {
         this.dataCenterIterator = dataCenterIterator;
+    }
+
+    public void sortByFitness() {
+        bats.sort((b1, b2) -> Double.compare(b2.getFitness(), b1.getFitness())); // Mengurutkan berdasarkan fitness
     }
 }

@@ -14,6 +14,14 @@ public class Bat {
         this.velocity = new double[chromosome.length];
     }
 
+    // Constructor with chromosome length
+    public Bat(int chromosomeLength) {
+        this.id = -1; // Default ID if not provided
+        this.chromosome = new int[chromosomeLength];
+        this.fitness = 0.0;
+        this.velocity = new double[chromosomeLength];
+    }
+
     // Getter and setter methods
     public int getId() {
         return id;
