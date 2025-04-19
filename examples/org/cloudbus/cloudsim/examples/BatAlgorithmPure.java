@@ -1,0 +1,226 @@
+package org.cloudbus.cloudsim.examples;
+
+import java.util.List;
+import java.util.Random;
+
+import org.cloudbus.cloudsim.Cloudlet;
+import org.cloudbus.cloudsim.Vm;
+
+public class BatAlgorithm {
+    // Parameters
+    private int maxIterations; // Maximum number of iterations
+    private int populationSize; // Population size (number of bats)
+    private double[] frequency; // Frequency of ultrasonic pulses for each bat
+    private double[] loudness; // Loudness of each bat
+    private double[] pulseRate; // Pulse rate of each bat
+    private double alpha; // Parameter for updating loudness
+    private double gamma; // Parameter for updating pulse rate
+
+    private List<Cloudlet> cloudletList;
+    private List<Vm> vmList;
+
+    private int numberOfDataCenters = 6;
+    private double[] globalBestFitnesses;
+    private int[][] globalBestPositions;
+
+    public BatAlgorithm(int maxIterations, int populationSize, double alpha, double gamma,
+                        List<Cloudlet> cloudletList, List<Vm> vmList, int chromosomeLength) {
+        this.maxIterations = maxIterations;
+        this.populationSize = populationSize;
+        this.alpha = alpha;
+        this.gamma = gamma;
+        this.cloudletList = cloudletList;
+        this.vmList = vmList;
+
+        frequency = new double[populationSize];
+        loudness = new double[populationSize];
+        pulseRate = new double[populationSize];
+
+        globalBestFitnesses = new double[numberOfDataCenters];
+        globalBestPositions = new int[numberOfDataCenters][];
+
+        for (int i = 0; i < numberOfDataCenters; i++) {
+            globalBestFitnesses[i] = Double.NEGATIVE_INFINITY;
+            globalBestPositions[i] = new int[chromosomeLength];
+        }
+    }
+
+    public void initializeGlobalBest(PopulationBA population, int dataCenterIterator) {
+        int dcIndex = dataCenterIterator - 1;
+        // Calculate fitness for each bat in the initial population
+        for (Bat bat : population.getBats()) {
+            calcFitness(bat, dataCenterIterator, 0);
+        }
+        // Sort to find the best bat and set as global best
+        sortBatsAndFindBest(population, dataCenterIterator);
+    }
+
+//    Step 2: Initialize population
+    public PopulationBA initPopulation(int chromosomeLength, int dataCenterIterator) {
+        PopulationBA population = new PopulationBA(this.populationSize, chromosomeLength, dataCenterIterator);
+        return population;
+    }
+
+    // Step 3: Define frequency
+    public void defineFrequency() {
+        Random random = new Random();
+        for (int i = 0; i < populationSize; i++) {
+            frequency[i] = random.nextDouble() * 2; // Frequency range [0, 2]
+        }
+    }
+
+    // Step 4: Initialize loudness and pulse rate
+    public void initLoudnessAndPulseRate() {
+        Random random = new Random();
+        for (int i = 0; i < populationSize; i++) {
+            loudness[i] = random.nextDouble(); // Loudness range [0, 1]
+            pulseRate[i] = random.nextDouble(); // Pulse rate range [0, 1]
+        }
+    }
+
+    // Step 6: Generate new solutions
+    public void generateNewSolutions(PopulationBA population, int iteration, int dataCenterIterator) {
+        Random random = new Random();
+        int dcIndex = dataCenterIterator - 1;
+    
+        if (globalBestPositions[dcIndex] == null) {
+            globalBestPositions[dcIndex] = new int[population.getBats().get(0).getChromosomeLength()];
+        }
+
+        int minPosition = (dataCenterIterator - 1) * 9;
+        int maxPosition = ((dataCenterIterator) * 9) - 1;
+    
+        for (Bat bat : population.getBats()) {
+            for (int i = 0; i < bat.getChromosomeLength(); i++) {
+                double newFrequency = frequency[bat.getId()];
+                double newVelocity = bat.getVelocity()[i] + (bat.getGene(i) - globalBestPositions[dcIndex][i]) * newFrequency;
+                int newPosition = bat.getGene(i) + (int) Math.round(newVelocity);
+    
+                if (newPosition < minPosition) {
+                    newPosition = minPosition;
+                } else if (newPosition > maxPosition) {
+                    newPosition = maxPosition;
+                }
+    
+                bat.setVelocity(i, newVelocity);
+                bat.setGene(i, newPosition);
+            }
+    
+            // Step 7: Local search around the best solution
+            if (random.nextDouble() > pulseRate[bat.getId()]) {
+                int[] localSolution = globalBestPositions[dcIndex].clone();
+                for (int i = 0; i < localSolution.length; i++) {
+                    localSolution[i] += random.nextGaussian() * 0.1; // Small random perturbation
+                }
+                bat.setChromosome(localSolution);
+            } else {
+                // Generate a new solution randomly
+                for (int i = 0; i < bat.getChromosomeLength(); i++) {
+                    bat.setGene(i, random.nextInt(maxPosition - minPosition + 1) + minPosition);
+                }
+            }
+        }
+    }
+    
+
+    // Step 12: Accept new solutions
+    public void acceptNewSolutions(PopulationBA population, int dataCenterIterator) {
+        Random random = new Random();
+        int dcIndex = dataCenterIterator - 1; // Indeks datacenter dalam array
+    
+        // Iterasi untuk setiap kelelawar dalam populasi
+        for (Bat bat : population.getBats()) {
+            double fitness = calcFitness(bat, dataCenterIterator, 0); // Menghitung nilai fitness kelelawar
+    
+            // Jika nilai fitness lebih baik dan bilangan acak lebih kecil dari intensitas suara, perbarui solusi terbaik
+            if (random.nextDouble() < loudness[bat.getId()] && fitness > globalBestFitnesses[dcIndex]) {
+                globalBestFitnesses[dcIndex] = fitness; // Perbarui nilai fitness terbaik
+                globalBestPositions[dcIndex] = bat.getChromosome().clone(); // Menyimpan solusi terbaik
+    
+                // Memperbarui intensitas suara dan pulsa ultrasonik
+                loudness[bat.getId()] *= alpha; // Mengurangi intensitas suara
+                pulseRate[bat.getId()] += 0.1; // Menambahkan pulsa ultrasonik
+
+                // Pulsa ultrasonik tidak boleh melebihi 1
+                if (pulseRate[bat.getId()] > 1) {
+                    pulseRate[bat.getId()] = 1;
+                }
+            } 
+        }
+    }
+    
+
+    // Step 16: Sort bats and find the current best solution
+    public void sortBatsAndFindBest(PopulationBA population, int dataCenterIterator) {
+        // Mengurutkan populasi kelelawar berdasarkan fitness secara descending
+        population.getBats().sort((b1, b2) -> Double.compare(b2.getFitness(), b1.getFitness()));
+        int dcIndex = dataCenterIterator - 1;
+
+        // Menyimpan fitness dan kromosom terbaik dari kelelawar dengan fitness tertinggi
+        globalBestFitnesses[dcIndex] = population.getBats().get(0).getFitness();
+        globalBestPositions[dcIndex] = population.getBats().get(0).getChromosome().clone();
+    }
+
+    // Fitness calculation
+    public double calcFitness(Bat bat, int dataCenterIterator, int cloudletIteration) {
+        double totalExecutionTime = 0;
+        double totalCost = 0;
+        int iterator = 0;
+        dataCenterIterator = dataCenterIterator - 1;
+
+        for (int i = 0 + dataCenterIterator * 9 + cloudletIteration * 54;
+             i < 9 + dataCenterIterator * 9 + cloudletIteration * 54; i++) {
+            int gene = bat.getGene(iterator);
+            double mips = calculateMips(gene % 9);
+
+            totalExecutionTime += cloudletList.get(i).getCloudletLength() / mips;
+            totalCost += calculateCost(vmList.get(gene % 9), cloudletList.get(i));
+            iterator++;
+        }
+
+        double makespanFitness = calculateMakespanFitness(totalExecutionTime);
+        double costFitness = calculateCostFitness(totalCost);
+
+        double fitness = makespanFitness + costFitness;
+
+        bat.setFitness(fitness);
+        return fitness;
+    }
+
+    // Helper methods
+    private double calculateMips(int vmIndex) {
+        double mips = 0;
+        if (vmIndex % 9 == 0 || vmIndex % 9 == 3 || vmIndex % 9 == 6) {
+            mips = 400;
+        } else if (vmIndex % 9 == 1 || vmIndex % 9 == 4 || vmIndex % 9 == 7) {
+            mips = 500;
+        } else if (vmIndex % 9 == 2 || vmIndex % 9 == 5 || vmIndex % 9 == 8) {
+            mips = 600;
+        }
+        return mips;
+    }
+
+    private double calculateCost(Vm vm, Cloudlet cloudlet) {
+        double costPerMips = vm.getCostPerMips();
+        double cloudletLength = cloudlet.getCloudletLength();
+        double mips = vm.getMips();
+        double executionTime = cloudletLength / mips;
+        return costPerMips * executionTime;
+    }
+
+    private double calculateMakespanFitness(double totalExecutionTime) {
+        return 1.0 / totalExecutionTime;
+    }
+
+    private double calculateCostFitness(double totalCost) {
+        return 1.0 / totalCost;
+    }
+
+    public int[] getBestVmAllocationForDatacenter(int dataCenterIterator) {
+        return globalBestPositions[dataCenterIterator - 1];
+    }
+
+    public double getBestFitnessForDatacenter(int dataCenterIterator) {
+        return globalBestFitnesses[dataCenterIterator - 1];
+    }
+}

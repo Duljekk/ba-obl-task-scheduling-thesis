@@ -1,16 +1,17 @@
 package org.cloudbus.cloudsim.examples;
 
 public class Bat {
-    private int id; // Unique identifier for the bat
-    private int[] chromosome; // Chromosome representing the solution
-    private double fitness; // Fitness value of the bat
-    private double[] velocity; // Velocity of the bat
+    private int id; // ID unik untuk setiap kelelawar
+    private int[] chromosome; // Kromosom sebagai representasi solusi
+    private double fitness; // Nilai fitness kelelawsar
+    private double[] velocity; // Kecepatan kelelawar
 
     // Constructor
     public Bat(int id, int[] chromosome) {
         this.id = id;
         this.chromosome = chromosome;
-        this.fitness = 0.0;
+        this.fitness = 0.0; // Mengatur nilai fitness awal sebagai 0
+        // // Mengalokasikan array kecepatan sesuai dengan panjang kromosom
         this.velocity = new double[chromosome.length];
     }
 

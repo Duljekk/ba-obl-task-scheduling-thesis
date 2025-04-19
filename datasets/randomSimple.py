@@ -2,9 +2,9 @@ import random
 import os
 
 output_folder = "randomSimple"
-os.makedirs(output_folder, exist_ok=True)  # Create folder if it doesn't exist
+os.makedirs(output_folder, exist_ok=True)  # Membuat folder randomSimple jika belum ada
 
-# Generate a consistent list of random values
+# Menghasilkan list bilangan bulat dengan nilai acak dari rentang 10000 hingga 40000
 random_values = [random.randint(10000, 40000) for _ in range(10000)]
 
 def generate_txt(rows):
@@ -14,6 +14,6 @@ def generate_txt(rows):
             file.write(f"{value}\n")
     print(f"Generated: {filename}")
 
-# Generate TXT files for 10,000 down to 1,000 rows
+# Menghasilkan variasi file .txt dari 10,000 baris hingga 1,000 baris dengan kelipatan 1,000
 for r in range(10000, 0, -1000):
     generate_txt(r)
