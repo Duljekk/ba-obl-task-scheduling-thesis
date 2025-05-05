@@ -7,29 +7,16 @@ public class Bat {
     private double[] velocity; // Kecepatan kelelawar
 
     // Constructor
-    public Bat(int id, int[] chromosome) {
+    public Bat(int id, int chromosomeLength) {
         this.id = id;
-        this.chromosome = chromosome;
-        this.fitness = 0.0; // Mengatur nilai fitness awal sebagai 0
-        // // Mengalokasikan array kecepatan sesuai dengan panjang kromosom
-        this.velocity = new double[chromosome.length];
-    }
-
-    // Constructor with chromosome length
-    public Bat(int chromosomeLength) {
-        this.id = -1; // Default ID if not provided
         this.chromosome = new int[chromosomeLength];
-        this.fitness = 0.0;
         this.velocity = new double[chromosomeLength];
+        this.fitness = 0.0;
     }
 
     // Getter and setter methods
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public int[] getChromosome() {
@@ -54,11 +41,7 @@ public class Bat {
 
     // Set the velocity for a specific index
     public void setVelocity(int index, double value) {
-        if (index >= 0 && index < velocity.length) {
-            velocity[index] = value;
-        } else {
-            throw new IndexOutOfBoundsException("Index out of bounds for velocity array.");
-        }
+        velocity[index] = value;
     }
 
     // Get a specific gene from the chromosome

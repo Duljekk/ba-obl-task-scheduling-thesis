@@ -2,6 +2,7 @@ package org.cloudbus.cloudsim.examples;
 
 import java.util.List;
 import java.util.Random;
+import java.util.ArrayList;
 
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.Vm;
@@ -14,6 +15,10 @@ public class BatAlgorithm {
     private double[] pulseRate; //  Jumlah pulsa suara untuk setiap kelelawar          
     private double alpha; // Koefisien untuk memperbarui intensitas suara
     private double gamma; // Koefisien untuk memperbarui pulsa ultrasonik
+    private double fmin = 0.0; // Minimum frequency
+    private double fmax = 2.0; // Maximum frequency
+    private boolean useOBL = true; // Flag to enable/disable OBL
+    private double oblProbability = 1; // Probability of applying OBL at each stage
 
     private List<Cloudlet> cloudletList;
     private List<Vm> vmList;
@@ -46,203 +51,83 @@ public class BatAlgorithm {
         }
     }
 
-    // public void applyOBL(PopulationBA population, int dataCenterIterator, int iteration, int maxIterations) {
-    //     int dcIndex = dataCenterIterator - 1;
-    //     int[] eliteSolution = globalBestPositions[dcIndex];
-    //     int minVM = (dataCenterIterator - 1) * 9;
-    //     int maxVM = dataCenterIterator * 9 - 1;
-
-    //     Random random = new Random();
-
-    //     for (Bat bat : population.getBats()) {
-    //         int[] dynamicOppositeSolution = new int[eliteSolution.length];
-    //         int[] quasiOppositeSolution = new int[eliteSolution.length];
-
-    //         // Calculate dynamic and quasi-opposite solutions
-    //         for (int i = 0; i < eliteSolution.length; i++) {
-    //             int gene = bat.getGene(i);
-
-    //             // Dynamic opposition
-    //             double dynamicFactor = random.nextDouble() * (maxVM - minVM) * (1 - (double) iteration / maxIterations);
-    //             dynamicOppositeSolution[i] = (int) (minVM + maxVM - gene + dynamicFactor);
-    //             dynamicOppositeSolution[i] = clampVM(dynamicOppositeSolution[i], dataCenterIterator);
-
-    //             // Quasi-opposition
-    //             double quasiFactor = random.nextDouble() * ((minVM + maxVM) / 2.0 - gene);
-    //             quasiOppositeSolution[i] = (int) ((minVM + maxVM) / 2.0 + quasiFactor);
-    //             quasiOppositeSolution[i] = clampVM(quasiOppositeSolution[i], dataCenterIterator);
-    //         }
-
-    //         // Evaluate dynamic opposite solution
-    //         Bat dynamicOppositeBat = new Bat(-1, dynamicOppositeSolution);
-    //         double dynamicOppositeFitness = calcFitness(dynamicOppositeBat, dataCenterIterator, 0);
-
-    //         // Evaluate quasi-opposite solution
-    //         Bat quasiOppositeBat = new Bat(-1, quasiOppositeSolution);
-    //         double quasiOppositeFitness = calcFitness(quasiOppositeBat, dataCenterIterator, 0);
-
-    //         // Keep the better solution
-    //         if (dynamicOppositeFitness > bat.getFitness() || quasiOppositeFitness > bat.getFitness()) {
-    //             if (dynamicOppositeFitness > quasiOppositeFitness) {
-    //                 bat.setChromosome(dynamicOppositeSolution);
-    //                 bat.setFitness(dynamicOppositeFitness);
-    //             } else {
-    //                 bat.setChromosome(quasiOppositeSolution);
-    //                 bat.setFitness(quasiOppositeFitness);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // // Helper method to clamp VM index within the valid range for the data center
-    // private int clampVM(int vmIndex, int dataCenterIterator) {
-    //     int minVM = (dataCenterIterator - 1) * 9;
-    //     int maxVM = dataCenterIterator * 9 - 1;
-    //     return Math.min(Math.max(vmIndex, minVM), maxVM);
-    // }
-
-    // // Generalized [OBL] function
-    // private Bat applyOBL(Bat bat, int dataCenterIterator) {
-    //     Bat oppositeBat = new Bat(bat.getChromosomeLength());
-    //     for (int j = 0; j < bat.getChromosomeLength(); j++) {
-    //         double lowerBound = 0; // Replace with actual lower bound for parameter j
-    //         double upperBound = 8; // Replace with actual upper bound for parameter j
-    //         double originalValue = bat.getGene(j);
-
-    //         // Ensure originalValue is within bounds
-    //         originalValue = Math.max(lowerBound, Math.min(upperBound, originalValue));
-
-    //         // Compute opposite value
-    //         double oppositeValue = lowerBound + upperBound - originalValue;
-    
-    //         // Clamp and round
-    //         int newGene = (int) Math.round(Math.max(lowerBound, Math.min(upperBound, oppositeValue)));
-            
-    //         oppositeBat.setGene(j, newGene);
-
-    //         // double oppositeValue = lowerBound + upperBound - originalValue;
-    //         // oppositeBat.setGene(j, (int) Math.round(oppositeValue));
-    //     }
-    //     return oppositeBat;
-    // }
-
-    // // Method to implement [OBL]
-    // private void applyOBL() {
-    //     // Generate the opposite population
-    //     PopulationBA oppositePopulation = population.generateOppositePopulation();
-
-    //     // Combine and select the fittest bats
-    //     population.combineAndSelectFittest();
-    // }
-
-    public void initializeGlobalBest(PopulationBA population, int dataCenterIterator) {
-        int dcIndex = dataCenterIterator - 1;
-        // Calculate fitness for each bat in the initial population
-        for (Bat bat : population.getBats()) {
-            calcFitness(bat, dataCenterIterator, 0);
-        }
-        // Sort to find the best bat and set as global best
-        sortBatsAndFindBest(population, dataCenterIterator);
-    }
-
-    // [OBL] (Opposition-Based Learning) - Arfan
-    public void applyOBL(PopulationBA population, int dataCenterIterator) {
-        int dcIndex = dataCenterIterator - 1;
-        int[] eliteSolution = globalBestPositions[dcIndex];
-        int minVM = (dataCenterIterator - 1) * 9;
-        int maxVM = dataCenterIterator * 9 - 1;
-        
-        for (Bat bat : population.getBats()) {
-            int[] oppositeSolution = new int[bat.getChromosomeLength()];
-            
-            // Calculate opposite solution using OBL formula
-            for (int i = 0; i < bat.getChromosomeLength(); i++) {
-                oppositeSolution[i] = minVM + maxVM - bat.getGene(i);
-                oppositeSolution[i] = clampVM(oppositeSolution[i], minVM, maxVM);
-            }
-            
-            // Evaluate opposite solution
-            Bat oppositeBat = new Bat(oppositeSolution.length);
-            oppositeBat.setChromosome(oppositeSolution);
-            double oppositeFitness = calcFitness(oppositeBat, dataCenterIterator, 0);
-            
-            // Replace if better
-            if (oppositeFitness > bat.getFitness()) {
-                bat.setChromosome(oppositeSolution);
-                bat.setFitness(oppositeFitness);
-            }
-        }
-    }
-
-    private int clampVM(int value, int minVM, int maxVM) {
-        return Math.min(Math.max(value, minVM), maxVM);
-    }
-
-//    Step 2: Initialize population
+    // Step 2: Initialize population
     public PopulationBA initPopulation(int chromosomeLength, int dataCenterIterator) {
-        // // Step 1: Generate the original population
-        // PopulationBA originalPopulation = new PopulationBA(this.populationSize, chromosomeLength, dataCenterIterator);
-        
-        // // Step 2: Generate the opposite population
-        // PopulationBA oppositePopulation = originalPopulation.generateOppositePopulation();
-        
-        // // Step 3: Combine original and opposite populations and select the fittest
-        // originalPopulation.combineAndSelectFittest();
-        
-        // return originalPopulation; // Return the final population
-
         // Membuat populasi kelelawar baru
         PopulationBA population = new PopulationBA(this.populationSize, chromosomeLength, dataCenterIterator);
-         applyOBL(population, dataCenterIterator);  // New OBL step
-         initializeGlobalBest(population, dataCenterIterator);
+        
+        // Apply Opposition-Based Learning if enabled
+        if (useOBL) {
+            population = applyOppositionBasedLearning(population, dataCenterIterator);
+        }
+        
         return population;
     }
 
-//         // Step 2: Initialize population using [OBL]
-//         public PopulationBA initPopulation(int chromosomeLength, int dataCenterIterator) {
-//         // Step 1: Generate the original population
-//         PopulationBA population = new PopulationBA(this.populationSize, chromosomeLength, dataCenterIterator);
-    
-//         // Step 2: Generate the opposite population
-//         PopulationBA oppositePopulation = new PopulationBA(this.populationSize, chromosomeLength, dataCenterIterator);
-//         for (int i = 0; i < this.populationSize; i++) {
-//             Bat originalBat = population.getBat(i);
-//             Bat oppositeBat = new Bat(chromosomeLength);
-    
-//             for (int j = 0; j < chromosomeLength; j++) {
-//                 // Assuming lowerBound[j] and upperBound[j] are defined for each parameter
-//                 double lowerBound = 0; // Replace with actual lower bound for parameter j
-//                 double upperBound = 8; // Replace with actual upper bound for parameter j
-//                 double originalValue = originalBat.getGene(j);
-//                 double oppositeValue = lowerBound + upperBound - originalValue;
-//                 oppositeBat.setGene(j, (int) Math.round(oppositeValue)); // Konversi ke int
-//                 // oppositeBat.setGene(j, oppositeValue);
-//             }
-//             oppositePopulation.setBat(i, oppositeBat);
-//         }
-    
-//         // Step 3: Combine the original and opposite populations
-//         PopulationBA combinedPopulation = new PopulationBA(2 * this.populationSize, chromosomeLength, dataCenterIterator);
-//         for (int i = 0; i < this.populationSize; i++) {
-//             combinedPopulation.setBat(i, population.getBat(i));
-//             combinedPopulation.setBat(i + this.populationSize, oppositePopulation.getBat(i));
-//         }
-    
-//         // Step 4: Select the fittest individuals
-//         combinedPopulation.sortByFitness();
-//         PopulationBA finalPopulation = new PopulationBA(this.populationSize, chromosomeLength, dataCenterIterator);
-//         for (int i = 0; i < this.populationSize; i++) {
-//             finalPopulation.setBat(i, combinedPopulation.getBat(i));
-//         }
-//         return finalPopulation;
-//     }
+    /**
+     * Applies Opposition-Based Learning to improve initial population
+     * @param population Original population
+     * @param dataCenterIterator Current data center index
+     * @return Improved population after OBL
+     */
+    private PopulationBA applyOppositionBasedLearning(PopulationBA population, int dataCenterIterator) {
+        // Create opposite population
+        PopulationBA oppositePopulation = new PopulationBA(this.populationSize, 
+            population.getBats().get(0).getChromosomeLength(), dataCenterIterator);
+        
+        // Calculate bounds for each gene
+        int minPosition = (dataCenterIterator - 1) * 9;
+        int maxPosition = ((dataCenterIterator) * 9) - 1;
+        
+        // Generate opposite solutions
+        for (int i = 0; i < populationSize; i++) {
+            Bat originalBat = population.getBats().get(i);
+            Bat oppositeBat = oppositePopulation.getBats().get(i);
+            
+            // Generate opposite chromosome
+            for (int j = 0; j < originalBat.getChromosomeLength(); j++) {
+                int originalGene = originalBat.getGene(j);
+                int oppositeGene = minPosition + maxPosition - originalGene;
+                
+                // Ensure the opposite gene is within bounds
+                if (oppositeGene < minPosition) {
+                    oppositeGene = minPosition;
+                } else if (oppositeGene > maxPosition) {
+                    oppositeGene = maxPosition;
+                }
+                
+                oppositeBat.setGene(j, oppositeGene);
+            }
+            
+            // Calculate fitness for opposite solution
+            calcFitness(oppositeBat, dataCenterIterator, 0);
+        }
+        
+        // Combine original and opposite populations
+        List<Bat> combinedBats = new ArrayList<>();
+        combinedBats.addAll(population.getBats());
+        combinedBats.addAll(oppositePopulation.getBats());
+        
+        // Sort by fitness and select best Np solutions
+        combinedBats.sort((b1, b2) -> Double.compare(b2.getFitness(), b1.getFitness()));
+        
+        // Create new population with best solutions
+        PopulationBA improvedPopulation = new PopulationBA(this.populationSize, 
+            population.getBats().get(0).getChromosomeLength(), dataCenterIterator);
+        
+        for (int i = 0; i < populationSize; i++) {
+            improvedPopulation.getBats().set(i, combinedBats.get(i));
+        }
+        
+        return improvedPopulation;
+    }
 
-    // Step 3: Define frequency
+    // Step 3: Define frequency using equation 2: fi = fmin + (fmax − fmin)β
     public void defineFrequency() {
         Random random = new Random();
         for (int i = 0; i < populationSize; i++) {
-            // Menghasilkan nilai frekuensi acak dari rentang 0 sampai 2
-            frequency[i] = random.nextDouble() * 2; 
+            double beta = random.nextDouble(); // β in [0,1]
+            frequency[i] = fmin + (fmax - fmin) * beta;
         }
     }
 
@@ -272,22 +157,26 @@ public class BatAlgorithm {
         int maxPosition = ((dataCenterIterator) * 9) - 1;
     
         for (Bat bat : population.getBats()) {
+            // Store previous position
+            int[] previousPosition = bat.getChromosome().clone();
+            
             // Update frequency, velocity, and position
             for (int i = 0; i < bat.getChromosomeLength(); i++) {
                 double newFrequency = frequency[bat.getId()];
-                double newVelocity = bat.getVelocity()[i] + (bat.getGene(i) - globalBestPositions[dcIndex][i]) * newFrequency;
-                int newPosition = bat.getGene(i) + (int) Math.round(newVelocity);
-    
-                // if (newPosition < minPosition) {
-                //     newPosition = minPosition;
-                // } else if (newPosition > maxPosition) {
-                //     newPosition = maxPosition;
-                // }
-
-                // Clamp new position
-                newPosition = clampVM(newPosition, minPosition, maxPosition);
-    
+                // Update velocity using previous position
+                double newVelocity = bat.getVelocity()[i] + (previousPosition[i] - globalBestPositions[dcIndex][i]) * newFrequency;
                 bat.setVelocity(i, newVelocity);
+                
+                // Update position using equation 4: xit = xi(t-1) + vit
+                int newPosition = previousPosition[i] + (int) Math.round(newVelocity);
+    
+                // Ensure position stays within bounds
+                if (newPosition < minPosition) {
+                    newPosition = minPosition;
+                } else if (newPosition > maxPosition) {
+                    newPosition = maxPosition;
+                }
+    
                 bat.setGene(i, newPosition);
             }
     
@@ -298,35 +187,18 @@ public class BatAlgorithm {
                     localSolution[i] += random.nextGaussian() * 0.1; // Small random perturbation
                 }
                 bat.setChromosome(localSolution);
-
-                // // Apply [OBL] after local search
-                // Bat oppositeLocalBat = applyOBL(bat, dataCenterIterator); // Assuming bounds are 0 and 9
-                // double localOriginalFitness = calcFitness(bat, dataCenterIterator, 0);
-                // double localOppositeFitness = calcFitness(oppositeLocalBat, dataCenterIterator, 0);
-
-                // // Replace the bat with the opposite if it has better fitness
-                // if (localOppositeFitness > localOriginalFitness) {
-                //     bat.setChromosome(oppositeLocalBat.getChromosome());
-                // }
-
             } else {
                 // Generate a new solution randomly
                 for (int i = 0; i < bat.getChromosomeLength(); i++) {
                     bat.setGene(i, random.nextInt(maxPosition - minPosition + 1) + minPosition);
                 }
-
-                // // Apply [OBL] after random generation
-                // Bat oppositeBat = applyOBL(bat, dataCenterIterator);
-                // double originalFitness = calcFitness(bat, dataCenterIterator, 0);
-                // double oppositeFitness = calcFitness(oppositeBat, dataCenterIterator, 0);
-
-                // if (oppositeFitness > originalFitness) {
-                //     bat.setChromosome(oppositeBat.getChromosome());
-                // }
-
             }
         }
-        // applyOBL(population, dataCenterIterator);
+
+        // Apply OBL after generating new solutions with probability oblProbability
+        if (useOBL && random.nextDouble() < oblProbability) {
+            population = applyOppositionBasedLearning(population, dataCenterIterator);
+        }
     }
     
 
@@ -335,6 +207,11 @@ public class BatAlgorithm {
         Random random = new Random();
         int dcIndex = dataCenterIterator - 1;
     
+        // Apply OBL before accepting new solutions with probability oblProbability
+        if (useOBL && random.nextDouble() < oblProbability) {
+            population = applyOppositionBasedLearning(population, dataCenterIterator);
+        }
+
         for (Bat bat : population.getBats()) {
             double fitness = calcFitness(bat, dataCenterIterator, 0); // Calculate fitness for the bat
     
@@ -344,23 +221,12 @@ public class BatAlgorithm {
     
                 // Update loudness and pulse rate
                 loudness[bat.getId()] *= alpha; // Reduce loudness
-                pulseRate[bat.getId()] += 0.1; // Increase pulse rate (ensure it doesn't exceed 1)
+                pulseRate[bat.getId()] += gamma; // Increase pulse rate (ensure it doesn't exceed 1)
                 if (pulseRate[bat.getId()] > 1) {
                     pulseRate[bat.getId()] = 1;
                 }
             } 
-            // else {
-            //     // Apply [OBL] if the new solution is not accepted
-            //     Bat oppositeBat = applyOBL(bat, dataCenterIterator);
-            //     double originalFitness = calcFitness(bat, dataCenterIterator, 0);
-            //     double oppositeFitness = calcFitness(oppositeBat, dataCenterIterator, 0);
-    
-            //     if (oppositeFitness > originalFitness) {
-            //         bat.setChromosome(oppositeBat.getChromosome());
-            //     }
-            // }
         }
-        // applyOBL(population, dataCenterIterator);
     }
     
 

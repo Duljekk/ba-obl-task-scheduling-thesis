@@ -17,24 +17,11 @@ public class PopulationBA {
         this.dataCenterIterator = dataCenterIterator;
         this.bats = new ArrayList<>(); // Mengiisiasi list daftar kelelawar
 
-        // Memanggil fungsi untuk inisialisasi
-        initializePopulation();
+        // Initialize bats
+        for (int i = 0; i < populationSize; i++) {
+            bats.add(new Bat(i, chromosomeLength));
+        }
     }
-
-    // // Initialize the population with random bats
-    // private void initializePopulation() {
-    //     Random random = new Random();
-    //     for (int i = 0; i < populationSize; i++) {
-    //         int[] chromosome = new int[chromosomeLength];
-    //         for (int j = 0; j < chromosomeLength; j++) {
-    //             // Assign random values within the valid range for the data center
-    //             int minPosition = (dataCenterIterator - 1) * 9;
-    //             int maxPosition = (dataCenterIterator * 9) - 1;
-    //             chromosome[j] = minPosition + random.nextInt(maxPosition - minPosition + 1);
-    //         }
-    //         bats.add(new Bat(i, chromosome));
-    //     }
-    // }
 
     private void initializePopulation() {
         Random random = new Random();
@@ -86,46 +73,6 @@ public class PopulationBA {
     public List<Bat> getBats() {
         return bats;
     }
-
-    // // Method to generate the opposite population [OBL]
-    // public PopulationBA generateOppositePopulation() {
-    //     PopulationBA oppositePopulation = new PopulationBA(this.populationSize, this.chromosomeLength, this.dataCenterIterator);
-    //     Random random = new Random();
-
-    //     for (int i = 0; i < this.populationSize; i++) {
-    //         Bat originalBat = this.getBat(i);
-    //         int[] oppositeChromosome = new int[chromosomeLength];
-
-    //         for (int j = 0; j < chromosomeLength; j++) {
-    //             // Calculate the opposite value
-    //             int minPosition = (dataCenterIterator - 1) * 9;
-    //             int maxPosition = (dataCenterIterator * 9) - 1;
-    //             int originalValue = originalBat.getGene(j);
-    //             int oppositeValue = minPosition + maxPosition - originalValue; // OBL calculation
-
-    //             // Clamp the opposite value to ensure it remains within bounds
-    //             oppositeValue = Math.max(minPosition, Math.min(maxPosition, oppositeValue));
-    //             oppositeChromosome[j] = oppositeValue;
-    //         }
-
-    //         oppositePopulation.setBat(i, new Bat(i, oppositeChromosome));
-    //     }
-
-    //     return oppositePopulation;
-    // }
-
-        // // Method to combine original and opposite populations and select the fittest [OBL]
-        // public void combineAndSelectFittest() {
-        //     PopulationBA oppositePopulation = generateOppositePopulation();
-        //     List<Bat> combinedBats = new ArrayList<>(this.bats);
-        //     combinedBats.addAll(oppositePopulation.getBats());
-    
-        //     // Sort combined population by fitness
-        //     combinedBats.sort((b1, b2) -> Double.compare(b2.getFitness(), b1.getFitness()));
-    
-        //     // Select the fittest individuals to form the new population
-        //     this.bats = new ArrayList<>(combinedBats.subList(0, this.populationSize));
-        // }
 
     public Bat getBat(int index) {
         return bats.get(index);
